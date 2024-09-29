@@ -96,15 +96,18 @@ cd "$DEST"
 
 if [ -d kits/10 ]; then
     cd kits/10
-else
+elif [ -d $SDK_ZIP ]; then
     mkdir kits
     cd kits
     unzip $SDK_ZIP
     cd 10
 fi
-ln_s Lib lib
-ln_s Include include
-cd ../..
+
+if [ -d kits/10 ]; then
+    ln_s Lib lib
+    ln_s Include include
+    cd ../..
+fi
 
 SDKVER=$(basename $(echo kits/10/include/10.* | awk '{print $NF}'))
 echo Using SDK version $SDKVER
