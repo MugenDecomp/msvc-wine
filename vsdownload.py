@@ -46,6 +46,8 @@ def getArgsParser():
     parser.add_argument("--list-packages", const=True, action="store_const", help="List all individual packages, regardless of type")
     parser.add_argument("--include-optional", const=True, action="store_const", help="Include all optional dependencies")
     parser.add_argument("--skip-recommended", const=True, action="store_const", help="Don't include recommended dependencies")
+    parser.add_argument("--skip-sdk", const=True, action="store_const", help="Don't include Windows SDK")
+    parser.add_argument("--skip-arm", const=True, action="store_const", help="Don't include ARM Tools")
     parser.add_argument("--print-deps-tree", const=True, action="store_const", help="Print a tree of resolved dependencies for the given selection")
     parser.add_argument("--print-reverse-deps", const=True, action="store_const", help="Print a tree of packages that depend on the given selection")
     parser.add_argument("--print-selection", const=True, action="store_const", help="Print a list of the individual packages that are selected to be installed")
@@ -58,7 +60,7 @@ def getArgsParser():
     return parser
 
 def setPackageSelectionMSVC16(args, packages, userversion, sdk, toolversion, defaultPackages):
-    if findPackage(packages, "Microsoft.VisualStudio.Component.VC." + toolversion + ".x86.x64", None, warn=False):
+    if findPackage(packages, "Microsoft.VisualStudio.Component.VC." + toolversion + ".x86.x64", None, warn=False) and not args.skip_sdk:
         if sdk.startswith("10.0.") and int(sdk[5:]) >= 22000:
             sdkpkg = "Win11SDK_" + sdk
         else:
@@ -72,7 +74,7 @@ def setPackageSelectionMSVC16(args, packages, userversion, sdk, toolversion, def
         args.package.extend(defaultPackages)
 
 def setPackageSelectionMSVC15(args, packages, userversion, sdk, toolversion, defaultPackages):
-    if findPackage(packages, "Microsoft.VisualStudio.Component.VC.Tools." + toolversion, None, warn=False):
+    if findPackage(packages, "Microsoft.VisualStudio.Component.VC.Tools." + toolversion, None, warn=False) and not args.skip_sdk:
         args.package.extend(["Win10SDK_" + sdk, "Microsoft.VisualStudio.Component.VC.Tools." + toolversion])
     else:
         # Options for toolchains for specific versions. The latest version in
@@ -85,6 +87,8 @@ def setPackageSelection(args, packages):
     # If no packages are selected, install these versionless packages, which
     # gives the latest/recommended version for the current manifest.
     defaultPackages = ["Microsoft.VisualStudio.Workload.VCTools", "Microsoft.VisualStudio.Component.VC.Tools.ARM", "Microsoft.VisualStudio.Component.VC.Tools.ARM64"]
+    if args.skip_arm:
+        defaultPackages = ["Microsoft.VisualStudio.Workload.VCTools"]
 
     # Note, that in the manifest for MSVC version X.Y, only version X.Y-1
     # exists with a package name like "Microsoft.VisualStudio.Component.VC."
@@ -365,7 +369,14 @@ def getSelectedPackages(packages, args):
     included = {}
     for i in args.package:
         ret.extend(aggregateDepends(packages, included, i, None, args))
-    return ret
+    ret_noskip = []
+    for pkg in ret:
+        if args.skip_sdk:
+            if "Win11SDK" not in pkg['id'] and "Win10SDK" not in pkg['id']:
+                ret_noskip.append(pkg)
+        else:
+             ret_noskip.append(pkg)
+    return ret_noskip
 
 def sumInstalledSize(l):
     sum = 0
