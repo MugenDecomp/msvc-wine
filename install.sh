@@ -96,7 +96,7 @@ cd "$DEST"
 
 if [ -d kits/10 ]; then
     cd kits/10
-elif [ -d $SDK_ZIP ]; then
+elif [ ! -z $SDK_ZIP ]; then
     mkdir kits
     cd kits
     unzip $SDK_ZIP
@@ -189,7 +189,7 @@ for arch in x86 x64 arm arm64; do
 done
 rm msvcenv.sh
 
-if [ -d "$DEST/bin/$host" ]; then
+if [ -d "$DEST/bin/$host" && -d "$DEST/kits/10" ]; then
     if WINE="$(command -v wine64 || command -v wine)"; then
         WINEDEBUG=-all ${WINE} wineboot &>/dev/null
         echo "Build msvctricks ..."
