@@ -369,14 +369,11 @@ def getSelectedPackages(packages, args):
     included = {}
     for i in args.package:
         ret.extend(aggregateDepends(packages, included, i, None, args))
-    ret_noskip = []
-    for pkg in ret:
-        if args.skip_sdk:
-            if "Win11SDK" not in pkg['id'] and "Win10SDK" not in pkg['id']:
-                ret_noskip.append(pkg)
-        else:
-             ret_noskip.append(pkg)
-    return ret_noskip
+    if args.skip_sdk:
+        ret = list(filter(lambda k: "Win11SDK" not in k['id'] and "Win10SDK" not in k['id'], ret))
+    if args.skip_arm:
+        ret = list(filter(lambda k: "ARM" not in k['id'] and "arm" not in k['id'], ret))   
+    return ret
 
 def sumInstalledSize(l):
     sum = 0
